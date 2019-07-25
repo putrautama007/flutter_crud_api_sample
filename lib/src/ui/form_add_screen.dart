@@ -9,7 +9,7 @@ class FormAddScreen extends StatefulWidget {
   Profile profile;
 
   FormAddScreen({this.profile});
-  
+
   @override
   _FormAddScreenState createState() => _FormAddScreenState();
 }
@@ -28,14 +28,7 @@ class _FormAddScreenState extends State<FormAddScreen> {
 
   @override
   void initState() {
-    if(widget.profile != null){
-      _isFieldNameValid = true;
-      _controllerName.text = widget.profile.name;
-      _isFieldEmailValid = true;
-      _controllerEmail.text = widget.profile.email;
-      _isFieldAgeValid = true;
-      _controllerAge.text = widget.profile.age.toString();
-    }
+    checkProfile();
     super.initState();
   }
 
@@ -46,7 +39,16 @@ class _FormAddScreenState extends State<FormAddScreen> {
     super.dispose();
   }
 
-
+  checkProfile() {
+    if (widget.profile != null) {
+      _isFieldNameValid = true;
+      _controllerName.text = widget.profile.name;
+      _isFieldEmailValid = true;
+      _controllerEmail.text = widget.profile.email;
+      _isFieldAgeValid = true;
+      _controllerAge.text = widget.profile.age.toString();
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -72,56 +74,7 @@ class _FormAddScreenState extends State<FormAddScreen> {
                 Padding(
                   padding: const EdgeInsets.only(top: 8.0),
                   child: RaisedButton(
-                    onPressed: () {
-                      if (_isFieldNameValid == null ||
-                          _isFieldEmailValid == null ||
-                          _isFieldAgeValid == null ||
-                          !_isFieldNameValid ||
-                          !_isFieldEmailValid ||
-                          !_isFieldAgeValid) {
-                        _scaffoldState.currentState.showSnackBar(
-                          SnackBar(
-                            content: Text("Please fill all field"),
-                          ),
-                        );
-                        return;
-                      }
-                      setState(() => _isLoading = true);
-                      String name = _controllerName.text.toString();
-                      String email = _controllerEmail.text.toString();
-                      int age = int.parse(_controllerAge.text.toString());
-                      Profile profile =
-                      Profile(name: name, email: email, age: age.toString());
-                      if (widget.profile == null) {
-                        createBloc.createData(profile);
-                        createBloc.createProfile.listen((isSuccess){
-                          setState(() {
-                            _isLoading = false;
-                          });
-                          if (isSuccess == true) {
-                            Navigator.pop(context);
-                          } else {
-                            _scaffoldState.currentState.showSnackBar(SnackBar(
-                              content: Text("Submit data failed"),
-                            ));
-                          }
-                        });
-
-                      }else {
-                        profile.id = widget.profile.id;
-                        updateBloc.updateData(profile);
-                        updateBloc.updateProfile.listen((isSuccess){
-                          setState(() => _isLoading = false);
-                          if (isSuccess) {
-                            Navigator.pop(context);
-                          } else {
-                            _scaffoldState.currentState.showSnackBar(SnackBar(
-                              content: Text("Update data failed"),
-                            ));
-                          }
-                        });
-                      }
-                    },
+                    onPressed: () => onPress(),
                     child: Text(
                       widget.profile == null
                           ? "Submit".toUpperCase()
@@ -138,23 +91,72 @@ class _FormAddScreenState extends State<FormAddScreen> {
           ),
           _isLoading
               ? Stack(
-            children: <Widget>[
-              Opacity(
-                opacity: 0.3,
-                child: ModalBarrier(
-                  dismissible: false,
-                  color: Colors.grey,
-                ),
-              ),
-              Center(
-                child: CircularProgressIndicator(),
-              ),
-            ],
-          )
+                  children: <Widget>[
+                    Opacity(
+                      opacity: 0.3,
+                      child: ModalBarrier(
+                        dismissible: false,
+                        color: Colors.grey,
+                      ),
+                    ),
+                    Center(
+                      child: CircularProgressIndicator(),
+                    ),
+                  ],
+                )
               : Container(),
         ],
       ),
     );
+  }
+
+  onPress() {
+    if (_isFieldNameValid == null ||
+        _isFieldEmailValid == null ||
+        _isFieldAgeValid == null ||
+        !_isFieldNameValid ||
+        !_isFieldEmailValid ||
+        !_isFieldAgeValid) {
+      _scaffoldState.currentState.showSnackBar(
+        SnackBar(
+          content: Text("Please fill all field"),
+        ),
+      );
+      return;
+    }
+    setState(() => _isLoading = true);
+    String name = _controllerName.text.toString();
+    String email = _controllerEmail.text.toString();
+    int age = int.parse(_controllerAge.text.toString());
+    Profile profile = Profile(name: name, email: email, age: age.toString());
+    if (widget.profile == null) {
+      createBloc.createData(profile);
+      createBloc.createProfile.listen((isSuccess) {
+        setState(() {
+          _isLoading = false;
+        });
+        if (isSuccess == true) {
+          Navigator.pop(context);
+        } else {
+          _scaffoldState.currentState.showSnackBar(SnackBar(
+            content: Text("Submit data failed"),
+          ));
+        }
+      });
+    } else {
+      profile.id = widget.profile.id;
+      updateBloc.updateData(profile);
+      updateBloc.updateProfile.listen((isSuccess) {
+        setState(() => _isLoading = false);
+        if (isSuccess) {
+          Navigator.pop(context);
+        } else {
+          _scaffoldState.currentState.showSnackBar(SnackBar(
+            content: Text("Update data failed"),
+          ));
+        }
+      });
+    }
   }
 
   Widget _buildTextFieldName() {
