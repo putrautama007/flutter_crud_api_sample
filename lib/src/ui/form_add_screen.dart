@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_crud_api_sample/src/bloc/create_profile_bloc.dart';
+import 'package:flutter_crud_api_sample/src/bloc/update_profile_bloc.dart';
 import 'package:flutter_crud_api_sample/src/model/profile.dart';
-import 'package:flutter_crud_api_sample/src/repository/api_provider.dart';
 
 final GlobalKey<ScaffoldState> _scaffoldState = GlobalKey<ScaffoldState>();
 
@@ -8,15 +9,16 @@ class FormAddScreen extends StatefulWidget {
   Profile profile;
 
   FormAddScreen({this.profile});
-
-
+  
   @override
   _FormAddScreenState createState() => _FormAddScreenState();
 }
 
 class _FormAddScreenState extends State<FormAddScreen> {
   bool _isLoading = false;
-  ApiProvider _apiProvider = ApiProvider();
+
+  final createBloc = CreateProfileBloc();
+  final updateBloc = UpdateProfileBloc();
   bool _isFieldNameValid;
   bool _isFieldEmailValid;
   bool _isFieldAgeValid;
@@ -36,6 +38,15 @@ class _FormAddScreenState extends State<FormAddScreen> {
     }
     super.initState();
   }
+
+  @override
+  void dispose() {
+    createBloc.dispose();
+    updateBloc.dispose();
+    super.dispose();
+  }
+
+
 
   @override
   Widget build(BuildContext context) {
@@ -82,23 +93,27 @@ class _FormAddScreenState extends State<FormAddScreen> {
                       Profile profile =
                       Profile(name: name, email: email, age: age.toString());
                       if (widget.profile == null) {
-                        _apiProvider.createProfile(profile).then((isSuccess) {
-                          setState(() => _isLoading = false);
-                          if (isSuccess) {
-                            Navigator.pop(_scaffoldState.currentState.context);
+                        createBloc.createData(profile);
+                        createBloc.createProfile.listen((isSuccess){
+                          setState(() {
+                            _isLoading = false;
+                          });
+                          if (isSuccess == true) {
+                            Navigator.pop(context);
                           } else {
                             _scaffoldState.currentState.showSnackBar(SnackBar(
                               content: Text("Submit data failed"),
                             ));
                           }
-                        }
-                        );
+                        });
+
                       }else {
                         profile.id = widget.profile.id;
-                        _apiProvider.updateProfile(profile).then((isSuccess) {
+                        updateBloc.updateData(profile);
+                        updateBloc.updateProfile.listen((isSuccess){
                           setState(() => _isLoading = false);
                           if (isSuccess) {
-                            Navigator.pop(_scaffoldState.currentState.context);
+                            Navigator.pop(context);
                           } else {
                             _scaffoldState.currentState.showSnackBar(SnackBar(
                               content: Text("Update data failed"),

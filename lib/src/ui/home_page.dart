@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_crud_api_sample/src/bloc/delete_profile_bloc.dart';
+import 'package:flutter_crud_api_sample/src/bloc/profile_bloc.dart';
 import 'package:flutter_crud_api_sample/src/model/profile.dart';
-import 'package:flutter_crud_api_sample/src/repository/api_provider.dart';
 
 import 'form_add_screen.dart';
 
@@ -10,27 +11,43 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  ApiProvider _apiProvider;
   BuildContext context;
+
+  final profileBloc = ProfileBloc();
+  final deleteProfileBloc = DeleteProfileBloc();
 
   @override
   void initState() {
     super.initState();
-    _apiProvider = ApiProvider();
+    profileBloc.fetchData();
+  }
+
+  @override
+  void didChangeDependencies() {
+    profileBloc.fetchData();
+    super.didChangeDependencies();
   }
 
 
-  toAddForm(BuildContext context){
-    Navigator.push(context, MaterialPageRoute(builder: (context) => FormAddScreen()));
+  @override
+  void dispose() {
+    profileBloc.dispose();
+    deleteProfileBloc.dispose();
+    super.dispose();
   }
 
-  updateForm(BuildContext context, Profile profile){
+  toAddForm(BuildContext context) {
+    Navigator.push(
+        context, MaterialPageRoute(builder: (context) => FormAddScreen()));
+  }
+
+  updateForm(BuildContext context, Profile profile) {
     Navigator.push(context, MaterialPageRoute(builder: (context) {
       return FormAddScreen(profile: profile);
     }));
   }
 
-  deleteData(BuildContext context, Profile profile){
+  deleteData(BuildContext context, Profile profile) {
     this.context = context;
     showDialog(
         context: context,
@@ -44,20 +61,17 @@ class _HomeScreenState extends State<HomeScreen> {
                 child: Text("Yes"),
                 onPressed: () {
                   Navigator.pop(context);
-                  _apiProvider
-                      .deleteProfile(profile.id)
-                      .then((isSuccess) {
-                    if (isSuccess) {
-                      setState(() {});
-                      Scaffold.of(this.context)
-                          .showSnackBar(SnackBar(
-                          content: Text(
-                              "Delete data success")));
+                  deleteProfileBloc.deleteData(profile.id);
+                  deleteProfileBloc.deleteProfile.listen((isSuccess){
+                    if (isSuccess = true) {
+                      setState(() {
+                        profileBloc.fetchData();
+                      });
+                      Scaffold.of(this.context).showSnackBar(
+                          SnackBar(content: Text("Delete data success")));
                     } else {
-                      Scaffold.of(this.context)
-                          .showSnackBar(SnackBar(
-                          content: Text(
-                              "Delete data failed")));
+                      Scaffold.of(this.context).showSnackBar(
+                          SnackBar(content: Text("Delete data failed")));
                     }
                   });
                 },
@@ -72,37 +86,39 @@ class _HomeScreenState extends State<HomeScreen> {
           );
         });
   }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: Text("Flutter CRUD"),
         actions: <Widget>[
-          IconButton(icon: Icon(
-              Icons.add),
+          IconButton(
+            icon: Icon(Icons.add),
             onPressed: () => toAddForm(context),
-            iconSize: MediaQuery.of(context).size.width/12,)
+            iconSize: MediaQuery.of(context).size.width / 12,
+          )
         ],
       ),
       body: SafeArea(
-        child: FutureBuilder(
-          future: _apiProvider.getProfiles(),
-          builder: (BuildContext context, AsyncSnapshot<List<Profile>> snapshot) {
-            if (snapshot.hasError) {
-              return Center(
-                child: Text(
-                    "Something wrong with message: ${snapshot.error.toString()}"),
-              );
-            } else if (snapshot.connectionState == ConnectionState.done) {
-              List<Profile> profiles = snapshot.data;
-              return _buildListView(profiles);
-            } else {
-              return Center(
-                child: CircularProgressIndicator(),
-              );
-            }
-          },
-        ),
+        child: StreamBuilder(
+            stream: profileBloc.getProfile,
+            builder:
+                (BuildContext context, AsyncSnapshot<List<Profile>> snapshot) {
+              if (snapshot.hasError) {
+                return Center(
+                  child: Text(
+                      "Something wrong with message: ${snapshot.error.toString()}"),
+                );
+              } else if (snapshot.hasData) {
+                List<Profile> profiles = snapshot.data;
+                return _buildListView(profiles);
+              } else {
+                return Center(
+                  child: CircularProgressIndicator(),
+                );
+              }
+            }),
       ),
     );
   }
